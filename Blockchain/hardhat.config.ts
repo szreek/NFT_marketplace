@@ -12,18 +12,16 @@ const config: HardhatUserConfig = {
 const { GOERLI_URL, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
 task("deploy", "Deploys contract on a provided network")
-    .addParam("libraryName", "Please provide the Library Name")
-    .setAction(async ({libraryName}) => {
-         const deployLibrary = require("./scripts/deploy");
-          await deployLibrary(libraryName);
+    .setAction(async ({}) => {
+         const deployMarketplace = require("./scripts/deploy");
+          await deployMarketplace();
 });
 
 task("deploy-mainnet", "Deploys contract on a provided network")
-    .addParam("libraryName", "Please provide the Library Name")
     .addParam("privateKey", "Please provide the private key")
-    .setAction(async ({libraryName, privateKey}) => {
-         const deployLibrary = require("./scripts/deploy-mainnet");
-          await deployLibrary(libraryName, privateKey);
+    .setAction(async ({privateKey}) => {
+         const deployMarketplace = require("./scripts/deploy-mainnet");
+          await deployMarketplace(privateKey);
 });
 
 subtask("print", "Prints a message")

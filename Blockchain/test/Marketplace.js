@@ -16,7 +16,7 @@ describe('Marketplace', () => {
   describe('Marketplace', () => {
     
     it('First Test for Marketplace', async () => {
-      marketplace = await loadFixture(deployMarketplaceFixture);
+      const { marketplace } = await loadFixture(deployMarketplaceFixture);
       //expect
     })
 

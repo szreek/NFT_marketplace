@@ -1,7 +1,6 @@
 
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
-pragma abicoder v2;
+pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./NFTcollection.sol";
 
@@ -25,8 +24,8 @@ contract Marketplace is Ownable {
     event NFTminted( uint _tokenId, string collectionName, string collectionSymbol, address collectionAddress, address userAddress );
 
 
-    modifier onlyRegisteredCollection( Collection collection ) {
-        require( collectionAvailability[ address( collection ) ], "Address is not a Marketplace Collection." );
+    modifier onlyRegisteredCollection( NFTcollection _collection ) {
+        require( collectionAvailability[ address( _collection ) ], "Address is not a Marketplace Collection." );
         _;
     }
 
@@ -34,14 +33,14 @@ contract Marketplace is Ownable {
         NFTcollection nfts = new NFTcollection(_name, _symbol);
         CollectionDO memory newCollection = CollectionDO(_name, _symbol, msg.sender, address(nfts));
         userToCollections[msg.sender].push(newCollection);
-        collectionAvailability[msg.sender] = true;
+        collectionAvailability[address(nfts)] = true;
 
-        emit CollectionCreated( _name, _symbol, msg.sender ); 
+        emit CollectionCreated( _name, _symbol, address(nfts), msg.sender ); 
     } 
 
-    function mint(NFTcollection _collection, string memory _uri) public {
+    function mint(NFTcollection _collection, string memory _uri) onlyRegisteredCollection(_collection) public {
         uint tokenId = _collection.safeMint(msg.sender, _uri);
-        emit NFTminted( tokenId, collection.name(), collection.symbol(), address(_collection), msg.sender); 
+        emit NFTminted( tokenId, _collection.name(), _collection.symbol(), address(_collection), msg.sender); 
     }
 
 

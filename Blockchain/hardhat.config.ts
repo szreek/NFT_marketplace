@@ -6,7 +6,7 @@ require('dotenv').config({path: './process.env'});
 
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: "0.8.9",
 };
 
 const { GOERLI_URL, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
@@ -33,10 +33,10 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.7.4",
+        version: "0.8.9",
       },
       {
-        version: "0.8.4",
+        version: "0.8.1",
       },
     ],
   },
@@ -60,7 +60,7 @@ module.exports = {
   },
 
   solidity: {
-    version: "0.8.0",
+    version: "0.8.9",
     settings: {
       optimizer: {
         enabled: true,

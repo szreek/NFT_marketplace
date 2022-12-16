@@ -56,8 +56,4 @@ contract Marketplace is Ownable {
 
     }
 
-    function getAllOffersForUser() public {
-
-    }
-
 }

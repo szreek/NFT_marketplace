@@ -177,8 +177,12 @@ contract Marketplace is Ownable {
         emit TokenSold( price, _tokenId, address( _collection ), msg.sender, _offererAddress );
     }
 
-    function rejectOffer(uint _tokenId, NFTcollection _collection) public {
-    
+    function rejectOffer(uint _tokenId, NFTcollection _collection, address _offererAddress) onlyRegisteredCollection(_collection) public {
+        offers[ address( _collection) ] [ _tokenId ] [ offerersAddress ].active = false;
+        offerAvailability[ address( _collection) ] [ _tokenId ] [ offerersAddress ] = false;
+        userToFunds[ offerersAddress ] += offers[ address( _collection) ] [ _tokenId ] [ offerersAddress ].price;
+
+        emit OfferRejected( _tokenId, address( _collection ), offererAddress );
     }
 
 

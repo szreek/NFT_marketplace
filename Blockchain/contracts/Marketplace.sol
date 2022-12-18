@@ -24,6 +24,7 @@ contract Marketplace is Ownable {
     struct OfferDO {
         uint price;
         uint tokenId;
+        address offerOwner;
     }
     
     uint public fee;
@@ -33,8 +34,8 @@ contract Marketplace is Ownable {
     mapping (uint => uint) public idToNumberLeft;
     mapping( address => mapping( uint => ListingDO) ) public listings;
     mapping( address => mapping( uint => bool) ) public listingAvailability;
-    mapping( address => mapping( uint => OfferDO) ) public offers;
-    mapping( address => mapping( uint => bool) ) public offersAvailability;
+    mapping( address => mapping( uint => mapping( address => OfferDO ) ) ) public offers;
+    mapping( address => mapping( uint => mapping( address => bool ) ) ) public offerAvailability;
     mapping( address => uint256 ) public userToFunds;
     
 
@@ -147,18 +148,33 @@ contract Marketplace is Ownable {
 
     
     function createOffer(uint _tokenId, uint _price, NFTcollection _collection) onlyRegisteredCollection( collection ) public {
-        offers[ address( _collection ) ] [ _tokenId ] [ msg.sender ] = OfferDO(_price, _tokenId);
+        offers[ address( _collection ) ] [ _tokenId ] [msg.sender] = OfferDO(_price, _tokenId, msg.sender);
         offersAvailability[ address( _collection) ] [ _tokenId ] [ msg.sender ] = true;
 
         emit OfferCreated( _tokenId, address( _collection ), _price );
     }
 
     function removeOffer(uint _tokenId, uint _price, NFTcollection _collection) public {
-
+        offerAvailability[ address( _collection ) ] [ _tokenId ] = false;
+        delete offers[ address( _collection ) ] [ _tokenId ];
+        
+        emit OfferRemoved( _tokenId, address( _collection ) );
     }
 
-    function acceptOffer(uint _tokenId, NFTcollection _collection) public {
+    function acceptOffer(uint _tokenId, NFTcollection _collection, address _offererAddress) onlyRegisteredCollection(_collection) processingFeeMustBePaid( msg.value ) public {
+        if( msg.value > fee ) {
+            userToFunds[ msg.sender ] += msg.value - fee;
+        }
 
+        userToFunds[ owner() ] += fee;
+        
+        uint price = offers[ address( _collection) ] [ _tokenId ] [ _offererAddress ].price;
+        userToFunds[ msg.sender ] += price;
+
+        
+        _collection.safeTransferFrom( msg.sender, _offererAddress, _tokenId );
+
+        emit TokenSold( price, _tokenId, address( _collection ), msg.sender, _offererAddress );
     }
 
     function rejectOffer(uint _tokenId, NFTcollection _collection) public {

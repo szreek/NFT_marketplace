@@ -13,11 +13,28 @@ contract Marketplace is Ownable {
         address creatorAddress;
         address nftsAddress;
     }
+
+    struct ListingDO {
+        uint price;
+        uint tokenId;
+        uint feeAmount;
+        boolean isFeePaid;
+    }
+
+    struct OfferDO {
+        uint price;
+        uint tokenId;
+    }
     
-    
+    uint public fee;
+
     mapping (address => CollectionDO[]) public userToCollections;
-    mapping (uint => uint) public idToNumberLeft;
     mapping( address => bool ) public collectionAvailability;
+    mapping (uint => uint) public idToNumberLeft;
+    mapping( address => mapping( uint => ListingDO) ) public listings;
+    mapping( address => mapping( uint => bool) ) public listingAvailability;
+    mapping( address => mapping( uint => OfferDO) ) public offers;
+    mapping( address => mapping( uint => bool) ) public offersAvailability;
     mapping( address => uint256 ) public userToFunds;
     
 
@@ -25,10 +42,24 @@ contract Marketplace is Ownable {
     event NFTminted( uint _tokenId, string collectionName, string collectionSymbol, address collectionAddress, address userAddress );
     event FundsDeposited( uint funds, address userAddress );
     event FundsReturned( uint funds, address userAddress );
+    event ListingCreated( uint indexed tokenId, address indexed colectionAddress, uint price );
+    event ListingRemoved( uint indexed tokenId, address indexed colectionAddress);
+    event TokenSold( uint price, uint indexed tokenId, address indexed collecionAddress, address fromUser, address indexed toUser );
 
+
+
+    modifier processingFeeMustBePaid( uint _fee ) {
+        require( _fee >= fee, "Deposited fee is not enought to approved an offer." );
+        _;
+    }
 
     modifier onlyRegisteredCollection( NFTcollection _collection ) {
         require( collectionAvailability[ address( _collection ) ], "Address is not a Marketplace Collection." );
+        _;
+    }
+
+    modifier onlyListedCollection( NFTcollection _collection ) {
+        require( offersAvailability[ address( _collection ) ], "Address is not a Marketplace's Listed Collection." );
         _;
     }
 
@@ -40,6 +71,11 @@ contract Marketplace is Ownable {
     fallback() external payable {
         userToFunds[ msg.sender ] += msg.value;
         emit FundsDeposited( msg.value, msg.sender );
+    }
+
+    
+    function setFee( uint _fee ) onlyOwner external {
+        fee = _fee;
     }
 
     function returnFunds( uint256 amount ) external {
@@ -67,13 +103,44 @@ contract Marketplace is Ownable {
     }
 
 
-    function createListing(uint _tokenId, uint _price, NFTcollection _collection ) onlyRegisteredCollection(_collection) public {
+    function createListing(uint _tokenId, uint _price, NFTcollection _collection ) onlyRegisteredCollection(_collection) processingFeeMustBePaid(_collection) public {
+        
+        if( msg.value > fee ) {
+            userToFunds[ msg.sender ] += msg.value - fee;
+        }
 
+        listings[ address( _collection ) ] [ _tokenId ] = Listing( _price, _tokenId, fee, true );
+        listingAvailability[ address( _collection ) ] [ _tokenId ] = true;
+
+        emit ListingCreated( _tokenId, address( _collection ), _price );
     }
 
 
-    function removeListing(uint _tokenId, uint _price, NFTcollection _collection ) onlyRegisteredCollection(_collection) public {
+    function removeListing(uint _tokenId, NFTcollection _collection ) onlyRegisteredCollection( _collection ) public {
+        listingAvailability[ address( _collection ) ] [ _tokenId ] = false;
+        userToFunds[ msg.sender ] += listings[ address( _collection ) ] [ _tokenId ].feeAmount;
+        delete listings[ address( _collection ) ] [ _tokenId ];
+        
+        emit ListingRemoved( _tokenId, address( _collection ) );
+    }
 
+    
+    function buyListedNft(uint _tokenId, NFTcollection _collection )  onlyRegisteredCollection( _collection ) onlyListedCollection( _collection ) public {
+        uint price = listings[ address( collection ) ] [ _tokenId ].price;
+        
+        if( msg.value > price ) {
+            userToFunds[ msg.sender ] += msg.value - price;
+        }
+
+        address marketplace = owner()
+        userToFunds[ marketplace ] += listings[ address( _collection ) ] [ _tokenId ].feeAmount;
+        
+        address tokenOwner = _collection.ownerOf( _tokenId );
+        userToFunds[ tokenOwner ] += price;
+
+        _collection.safeTransferFrom( tokenOwner, msg.sender, _tokenId );
+        delete listings[ address( _collection ) ] [ _tokenId ];
+        emit TokenSold( price, _tokenId, address( _collection ), tokenOwner, msg.sender );
     }
 
     
@@ -85,7 +152,13 @@ contract Marketplace is Ownable {
 
     }
 
-    function buy(uint _nftId) public {
+    function acceptOffer(uint _tokenId, NFTcollection _collection) public {
 
     }
+
+    function rejectOffer(uint _tokenId, NFTcollection _collection) public {
+    
+    }
+
+
 }

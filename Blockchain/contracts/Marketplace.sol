@@ -39,12 +39,14 @@ contract Marketplace is Ownable {
     
 
     event CollectionCreated( string collectionName, string collectionSymbol, address collectionAddress, address user );
-    event NFTminted( uint _tokenId, string collectionName, string collectionSymbol, address collectionAddress, address userAddress );
+    event NFTminted( uint tokenId, string collectionName, string collectionSymbol, address collectionAddress, address userAddress );
     event FundsDeposited( uint funds, address userAddress );
     event FundsReturned( uint funds, address userAddress );
-    event ListingCreated( uint indexed tokenId, address indexed colectionAddress, uint price );
-    event ListingRemoved( uint indexed tokenId, address indexed colectionAddress);
-    event TokenSold( uint price, uint indexed tokenId, address indexed collecionAddress, address fromUser, address indexed toUser );
+    event ListingCreated( uint tokenId, address colectionAddress, uint price );
+    event ListingRemoved( uint tokenId, address colectionAddress);
+    event OfferCreated( uint tokenId, address colectionAddress, uint price );
+    event OfferRemoved( uint tokenId, address colectionAddress);
+    event TokenSold( uint price, uint tokenId, address collecionAddress, address fromUser, address toUser );
 
 
 
@@ -144,8 +146,11 @@ contract Marketplace is Ownable {
     }
 
     
-    function createOffer(uint _tokenId, uint _price, NFTcollection _collection) public {
+    function createOffer(uint _tokenId, uint _price, NFTcollection _collection) onlyRegisteredCollection( collection ) public {
+        offers[ address( _collection ) ] [ _tokenId ] [ msg.sender ] = OfferDO(_price, _tokenId);
+        offersAvailability[ address( _collection) ] [ _tokenId ] [ msg.sender ] = true;
 
+        emit OfferCreated( _tokenId, address( _collection ), _price );
     }
 
     function removeOffer(uint _tokenId, uint _price, NFTcollection _collection) public {
